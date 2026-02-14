@@ -24,9 +24,12 @@ router.post('/register',
         const { email, password } = req.body;
 
         try {
+            console.log('[AUTH] Registration attempt for email:', email);
+
             // Check if user already exists
             const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
             if (existingUser.rows.length > 0) {
+                console.log('[AUTH] Registration failed: Email already exists');
                 return res.status(409).json({ error: { message: 'Email already registered', status: 409 } });
             }
 
@@ -45,6 +48,8 @@ router.post('/register',
             const user = result.rows[0];
             const token = generateToken(user.id, user.email);
 
+            console.log('[AUTH] Registration successful for user ID:', user.id);
+
             res.status(201).json({
                 user: {
                     id: user.id,
@@ -56,8 +61,8 @@ router.post('/register',
                 apiKey
             });
         } catch (error) {
-            console.error('Registration error:', error);
-            res.status(500).json({ error: { message: 'Registration failed', status: 500 } });
+            console.error('[AUTH] Registration error:', error);
+            res.status(500).json({ error: { message: 'Registration failed internal server error', status: 500 } });
         }
     }
 );

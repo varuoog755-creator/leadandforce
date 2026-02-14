@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { LayoutDashboard, Users, MessageSquare, BarChart3, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, BarChart3, Settings, LogOut, ChevronRight, Activity, Shield } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -53,143 +53,125 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-xl text-gray-400">Loading...</div>
+            <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+                <div className="animate-pulse text-xs font-bold uppercase tracking-widest text-secondary">Initializing System...</div>
             </div>
         );
     }
 
+    const menuItems = [
+        { icon: LayoutDashboard, label: 'Overview', href: '/dashboard', active: true },
+        { icon: Users, label: 'Campaigns', href: '/campaigns' },
+        { icon: MessageSquare, label: 'Inbox', href: '/inbox' },
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: Settings, label: 'Settings', href: '/settings' },
+    ];
+
     return (
-        <div className="min-h-screen flex">
-            {/* Sidebar */}
-            <aside className="w-64 glass-dark p-6 flex flex-col">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                        LeadEnforce
-                    </h1>
+        <div className="min-h-screen flex bg-[#fafafa] dark:bg-black">
+            {/* Minimal Sidebar */}
+            <aside className="w-64 border-r border-border bg-white dark:bg-black p-6 flex flex-col">
+                <div className="flex items-center gap-3 mb-12 px-2">
+                    <div className="w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-white dark:text-black" />
+                    </div>
+                    <span className="font-bold tracking-tight text-lg uppercase">LeadEnforce</span>
                 </div>
 
-                <nav className="flex-1 space-y-2">
-                    <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 bg-white/10 rounded-lg">
-                        <LayoutDashboard size={20} />
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="/campaigns" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition-colors">
-                        <Users size={20} />
-                        <span>Campaigns</span>
-                    </a>
-                    <a href="/inbox" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition-colors">
-                        <MessageSquare size={20} />
-                        <span>Inbox</span>
-                    </a>
-                    <a href="/analytics" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition-colors">
-                        <BarChart3 size={20} />
-                        <span>Analytics</span>
-                    </a>
-                    <a href="/settings" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition-colors">
-                        <Settings size={20} />
-                        <span>Settings</span>
-                    </a>
+                <nav className="flex-1 space-y-1">
+                    {menuItems.map((item) => (
+                        <a
+                            key={item.label}
+                            href={item.href}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${item.active
+                                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                                    : 'text-secondary hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <item.icon size={16} />
+                                <span>{item.label}</span>
+                            </div>
+                            {item.active && <ChevronRight size={14} />}
+                        </a>
+                    ))}
                 </nav>
 
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 rounded-lg transition-colors text-red-400"
+                    className="flex items-center gap-3 px-3 py-2.5 mt-auto text-xs font-bold uppercase tracking-wider text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors"
                 >
-                    <LogOut size={20} />
-                    <span>Logout</span>
+                    <LogOut size={16} />
+                    <span>Terminate Session</span>
                 </button>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-8">
-                <div className="mb-8">
-                    <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-                    <p className="text-gray-400">Welcome back! Here's your automation overview.</p>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="glass rounded-xl p-6 animate-fade-in">
-                        <div className="text-gray-400 text-sm mb-2">Total Campaigns</div>
-                        <div className="text-3xl font-bold">{analytics?.campaigns.total || 0}</div>
-                        <div className="text-green-400 text-sm mt-2">
-                            {analytics?.campaigns.active || 0} active
+            <main className="flex-1 p-10 overflow-auto">
+                <div className="max-w-6xl mx-auto">
+                    <header className="mb-12 flex justify-between items-end">
+                        <div>
+                            <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">System Overview</h2>
+                            <p className="text-xs font-medium text-secondary uppercase tracking-widest">Active Automation Framework</p>
                         </div>
-                    </div>
-
-                    <div className="glass rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                        <div className="text-gray-400 text-sm mb-2">Total Leads</div>
-                        <div className="text-3xl font-bold">{analytics?.leads.total || 0}</div>
-                        <div className="text-blue-400 text-sm mt-2">
-                            {analytics?.leads.connected || 0} connected
+                        <div className="flex items-center gap-3 bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            <Activity size={12} className="animate-pulse" />
+                            Services Online
                         </div>
-                    </div>
+                    </header>
 
-                    <div className="glass rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                        <div className="text-gray-400 text-sm mb-2">Acceptance Rate</div>
-                        <div className="text-3xl font-bold">{analytics?.rates.acceptance || 0}%</div>
-                        <div className="text-purple-400 text-sm mt-2">
-                            Reply rate: {analytics?.rates.reply || 0}%
-                        </div>
-                    </div>
-
-                    <div className="glass rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                        <div className="text-gray-400 text-sm mb-2">Today's Actions</div>
-                        <div className="text-3xl font-bold">{analytics?.today.total_actions || 0}</div>
-                        <div className="text-green-400 text-sm mt-2">
-                            {analytics?.today.successful_actions || 0} successful
-                        </div>
-                    </div>
-                </div>
-
-                {/* Funnel Visualization */}
-                <div className="glass rounded-xl p-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-6">Lead Funnel</h3>
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 text-center">
-                            <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mb-2">
-                                <div className="text-2xl font-bold">{analytics?.leads.total || 0}</div>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                        {[
+                            { label: 'Total Campaigns', value: analytics?.campaigns.total || 0, sub: `${analytics?.campaigns.active || 0} Active` },
+                            { label: 'Total Leads', value: analytics?.leads.total || 0, sub: `${analytics?.leads.connected || 0} Connected` },
+                            { label: 'Acceptance', value: `${analytics?.rates.acceptance || 0}%`, sub: `Reply: ${analytics?.rates.reply || 0}%` },
+                            { label: 'Daily Actions', value: analytics?.today.total_actions || 0, sub: `${analytics?.today.successful_actions || 0} Success` },
+                        ].map((stat, i) => (
+                            <div key={i} className="min-panel p-6 animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-secondary mb-3">{stat.label}</div>
+                                <div className="text-3xl font-bold mb-2 tracking-tighter">{stat.value}</div>
+                                <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">{stat.sub}</div>
                             </div>
-                            <div className="text-sm text-gray-400">Total Leads</div>
-                        </div>
-                        <div className="text-gray-600">→</div>
-                        <div className="flex-1 text-center">
-                            <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-2">
-                                <div className="text-2xl font-bold">{analytics?.leads.connected || 0}</div>
-                            </div>
-                            <div className="text-sm text-gray-400">Connected</div>
-                        </div>
-                        <div className="text-gray-600">→</div>
-                        <div className="flex-1 text-center">
-                            <div className="bg-purple-500/20 border border-purple-500/50 rounded-lg p-4 mb-2">
-                                <div className="text-2xl font-bold">{analytics?.leads.replied || 0}</div>
-                            </div>
-                            <div className="text-sm text-gray-400">Replied</div>
-                        </div>
-                        <div className="text-gray-600">→</div>
-                        <div className="flex-1 text-center">
-                            <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-2">
-                                <div className="text-2xl font-bold">{analytics?.leads.converted || 0}</div>
-                            </div>
-                            <div className="text-sm text-gray-400">Converted</div>
-                        </div>
+                        ))}
                     </div>
-                </div>
 
-                {/* Quick Actions */}
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all">
-                            Create Campaign
-                        </button>
-                        <button className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg font-semibold hover:bg-white/10 transition-all">
-                            Add Social Account
-                        </button>
-                        <button className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg font-semibold hover:bg-white/10 transition-all">
-                            View Reports
-                        </button>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Funnel Section */}
+                        <div className="lg:col-span-2 min-panel p-8">
+                            <h3 className="text-sm font-bold uppercase tracking-widest mb-8">Performance Funnel</h3>
+                            <div className="space-y-6">
+                                {[
+                                    { label: 'Sourcing', val: analytics?.leads.total || 0, color: 'bg-gray-200 dark:bg-zinc-800' },
+                                    { label: 'Connecting', val: analytics?.leads.connected || 0, color: 'bg-blue-500' },
+                                    { label: 'Engaging', val: analytics?.leads.replied || 0, color: 'bg-purple-500' },
+                                    { label: 'Converting', val: analytics?.leads.converted || 0, color: 'bg-green-500' },
+                                ].map((item, i) => (
+                                    <div key={i} className="space-y-2">
+                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                            <span>{item.label}</span>
+                                            <span>{item.val} Units</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full ${item.color} transition-all duration-1000`}
+                                                style={{ width: `${Math.min(100, (item.val / (analytics?.leads.total || 1)) * 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="min-panel p-8">
+                            <h3 className="text-sm font-bold uppercase tracking-widest mb-8">Control Deck</h3>
+                            <div className="space-y-3">
+                                <button className="min-button w-full text-xs uppercase tracking-widest font-black py-4">New Campaign</button>
+                                <button className="w-full text-xs uppercase tracking-widest font-black py-4 border border-border rounded-md hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Integration</button>
+                                <button className="w-full text-xs uppercase tracking-widest font-black py-4 border border-border rounded-md hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Reports</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
