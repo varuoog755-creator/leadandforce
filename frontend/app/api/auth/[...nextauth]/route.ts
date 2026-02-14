@@ -8,7 +8,7 @@ const handler = NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
         }),
     ],
-    secret: process.env.NEXTAUTH_SECRET || 'leadenforce-secret-key-change-me',
+    secret: process.env.NEXTAUTH_SECRET || 'leadenforce-secret-key-2026-prod',
     pages: {
         signIn: '/',
     },
