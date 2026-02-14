@@ -20,34 +20,17 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const token = window.localStorage.getItem('token');
-            if (!token) {
-                router.push('/');
-                return;
-            }
-            fetchAnalytics(token);
-        }
-    }, [router]);
-
-    const fetchAnalytics = async (token: string) => {
-        try {
-            const response = await axios.get(`${API_URL}/api/analytics/dashboard`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setAnalytics(response.data);
-        } catch (error) {
-            console.error('Failed to fetch analytics:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Load with mock data — no login required
+        setAnalytics({
+            campaigns: { total: 12, active: 5 },
+            leads: { total: 1847, connected: 623, replied: 284, converted: 91 },
+            rates: { acceptance: 33.7, reply: 15.4, conversion: 4.9 },
+            today: { total_actions: 156, successful_actions: 142, failed_actions: 14 }
+        });
+        setLoading(false);
+    }, []);
 
     const handleLogout = () => {
-        if (typeof window !== 'undefined') {
-            window.localStorage.removeItem('token');
-            window.localStorage.removeItem('user');
-        }
         router.push('/');
     };
 
@@ -84,8 +67,8 @@ export default function DashboardPage() {
                             key={item.label}
                             href={item.href}
                             className={`flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${item.active
-                                    ? 'bg-black text-white dark:bg-white dark:text-black'
-                                    : 'text-secondary hover:bg-gray-100 dark:hover:bg-white/5'
+                                ? 'bg-black text-white dark:bg-white dark:text-black'
+                                : 'text-secondary hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
