@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - User data, campaigns, leads
+  postgres:
+    image: postgres:15-alpine
+    container_name: leadenforce-postgres
+    environment:
+      POSTGRES_DB: leadenforce
+      POSTGRES_USER: leadenforce_user
+      POSTGRES_PASSWORD: secure_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - leadenforce-network
+
+  # MongoDB - Scraped data, logs
+  mongodb:
+    image: mongo:7
+    container_name: leadenforce-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secure_password_change_in_production
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - leadenforce-network
+
+  # Redis - Job queue, caching
+  redis:
+    image: redis:7-alpine
+    container_name: leadenforce-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - leadenforce-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: leadenforce-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://leadenforce_user:secure_password_change_in_production@postgres:5432/leadenforce
+      MONGODB_URL: mongodb://admin:secure_password_change_in_production@mongodb:27017/leadenforce?authSource=admin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: change_this_secret_in_production
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - leadenforce-network
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: leadenforce-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - leadenforce-network
+
+  # LinkedIn Worker
+  linkedin-worker:
+    build:
+      context: ./workers
+      dockerfile: Dockerfile.linkedin
+    container_name: leadenforce-linkedin-worker
+    environment:
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://leadenforce_user:secure_password_change_in_production@postgres:5432/leadenforce
+      WORKER_TYPE: linkedin
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./workers:/app
+    networks:
+      - leadenforce-network
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+
+networks:
+  leadenforce-network:
+    driver: bridge

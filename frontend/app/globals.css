@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --accent-blue: #0080ff;
+  --accent-purple: #9c27b0;
+  --accent-pink: #f472b6;
+  --glass-bg: rgba(5, 5, 5, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Technical Grid */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 90%);
+  pointer-events: none;
+}
+
+/* Chromatic Mesh Background */
+.mesh-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(0, 128, 255, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(156, 39, 176, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(244, 114, 182, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(0, 128, 255, 0.2) 0%, transparent 40%);
+  filter: blur(80px);
+}
+
+/* Ultra-Glass v3 */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(32px) saturate(220%);
+  -webkit-backdrop-filter: blur(32px) saturate(220%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 0 100px -30px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.glass-panel::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 40px rgba(0, 128, 255, 0.15);
+  transform: scale(1.01);
+}
+
+/* Shimmer Effect for Buttons */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 3s infinite;
+}
+
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(10px, -20px) rotate(2deg);
+  }
+
+  66% {
+    transform: translate(-10px, 10px) rotate(-1deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float 12s ease-in-out infinite;
+}
+
+@keyframes slide-in-premium {
+  0% {
+    opacity: 0;
+    transform: translateY(60px) scale(0.9);
+    filter: blur(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-premium {
+  animation: slide-in-premium 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Glowing Orb */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: -1;
+}
