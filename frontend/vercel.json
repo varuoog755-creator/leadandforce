@@ -1,0 +1,17 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/api/analytics/:path*",
+            "destination": "http://72.61.235.182:3001/api/analytics/:path*"
+        },
+        {
+            "source": "/api/campaigns/:path*",
+            "destination": "http://72.61.235.182:3001/api/campaigns/:path*"
+        },
+        {
+            "source": "/api/leads/:path*",
+            "destination": "http://72.61.235.182:3001/api/leads/:path*"
+        }
+    ]
+}
