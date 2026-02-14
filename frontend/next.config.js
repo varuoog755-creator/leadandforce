@@ -3,17 +3,12 @@ const nextConfig = {
     reactStrictMode: true,
     swcMinify: true,
 
-    // Environment variables
-    env: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
-    },
-
     // Vercel deployment optimization
     output: 'standalone',
 
-    // Image optimization
+    // Image optimization - allow Google profile pics
     images: {
-        domains: ['localhost'],
+        domains: ['localhost', 'lh3.googleusercontent.com'],
     },
 }
 
