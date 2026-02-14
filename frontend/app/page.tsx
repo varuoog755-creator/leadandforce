@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Mail, Lock, Loader2, ArrowRight, ShieldCheck, Zap, Globe, Cpu } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -39,8 +39,10 @@ export default function LoginPage() {
 
             router.push('/dashboard');
         } catch (err: any) {
+            console.error('Full Error Object:', err);
             const errorMessage = err.response?.data?.error?.message || err.message || 'Authorization Override Failed';
-            setError(errorMessage);
+            const detailedError = err.response ? `[${err.response.status}] ${errorMessage}` : errorMessage;
+            setError(detailedError);
         } finally {
             setLoading(false);
         }

@@ -33,18 +33,31 @@ app.use('/api/', limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get(['/health', '/api/health'], (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Debug logging for Vercel
+app.use((req, res, next) => {
+    console.log(`[DEBUG] Incoming Request: ${req.method} ${req.url}`);
+    console.log(`[DEBUG] Headers: ${JSON.stringify(req.headers['x-forwarded-for'] || req.socket.remoteAddress)}`);
+    next();
 });
 
-// API Routes
-app.use(['/auth', '/api/auth'], authRoutes);
-app.use(['/campaigns', '/api/campaigns'], campaignRoutes);
-app.use(['/social-accounts', '/api/social-accounts'], socialAccountRoutes);
-app.use(['/leads', '/api/leads'], leadRoutes);
-app.use(['/analytics', '/api/analytics'], analyticsRoutes);
-app.use(['/inbox', '/api/inbox'], inboxRoutes);
+// Health check and Test endpoints
+const healthCheck = (req, res) => {
+    res.json({ status: 'ok', serverTime: new Date().toISOString(), path: req.url });
+};
+app.get(['/health', '/api/health', '/api/test'], healthCheck);
+
+// API Routes - Using a more flexible approach for monorepo routing
+const apiRoutes = express.Router();
+apiRoutes.use('/auth', authRoutes);
+apiRoutes.use('/campaigns', campaignRoutes);
+apiRoutes.use('/social-accounts', socialAccountRoutes);
+apiRoutes.use('/leads', leadRoutes);
+apiRoutes.use('/analytics', analyticsRoutes);
+apiRoutes.use('/inbox', inboxRoutes);
+
+// Register routes both with and without /api prefix to be safe
+app.use('/api', apiRoutes);
+app.use('/', apiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

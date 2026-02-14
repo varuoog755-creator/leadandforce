@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'leadenforce_super_secret_fallback_123';
 
 /**
  * Middleware to verify JWT token and authenticate requests
