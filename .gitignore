@@ -11,7 +11,8 @@ ENV/
 .venv
 
 # Environment variables
-# .env
+# Environment variables
+.env
 .env.local
 .env.*.local
 
