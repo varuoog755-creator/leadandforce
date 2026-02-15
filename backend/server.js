@@ -63,7 +63,13 @@ apiRoutes.use('/oauth', oauthRoutes);
 
 // Register routes both with and without /api prefix to be safe
 app.use('/api', apiRoutes);
+app.use('/api', apiRoutes);
 app.use('/', apiRoutes);
+
+// Root Debug Handler
+app.get('/', (req, res) => {
+    res.json({ message: 'Backend is running', version: '1.0.2', env: process.env.NODE_ENV });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
