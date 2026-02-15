@@ -2,12 +2,12 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDFP7F9YDBs9MW6dkJnnCuRWJprTr-qmD0",
-    authDomain: "leadenforce-clone.firebaseapp.com",
-    projectId: "leadenforce-clone",
-    storageBucket: "leadenforce-clone.appspot.com",
-    messagingSenderId: "958774538879",
-    appId: "1:958774538879:web:auto"
+    apiKey: "AIzaSyCs3JD77MROUGD1n_WZtOj0d8rGZlo6Pr8",
+    authDomain: "planning-with-ai-339c1.firebaseapp.com",
+    projectId: "planning-with-ai-339c1",
+    storageBucket: "planning-with-ai-339c1.firebasestorage.app",
+    messagingSenderId: "164972878558",
+    appId: "1:164972878558:web:8d78ea8ade5bcf7abdc04f"
 };
 
 const app = initializeApp(firebaseConfig);
