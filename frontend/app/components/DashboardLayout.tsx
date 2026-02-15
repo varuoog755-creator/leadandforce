@@ -6,12 +6,13 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import {
     LayoutDashboard, Users, MessageSquare, BarChart3, Settings,
-    LogOut, Zap, ChevronRight, Bell
+    LogOut, Zap, ChevronRight, Bell, UserCheck
 } from 'lucide-react';
 
 const menuItems = [
     { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
     { icon: Users, label: 'Campaigns', href: '/campaigns' },
+    { icon: UserCheck, label: 'Leads', href: '/leads' },
     { icon: MessageSquare, label: 'Inbox', href: '/inbox' },
     { icon: BarChart3, label: 'Analytics', href: '/analytics' },
     { icon: Settings, label: 'Settings', href: '/settings' },

@@ -2,64 +2,68 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Users, Zap, Target, Activity, ArrowUpRight, Clock } from 'lucide-react';
+import { fetchDashboardAnalytics } from '../../lib/api';
 
 export default function DashboardPage() {
     const [analytics, setAnalytics] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
+    const [isLive, setIsLive] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        // Demo data - will be replaced with real API calls when DB is connected
+        loadAnalytics();
+    }, []);
+
+    const loadAnalytics = async () => {
+        try {
+            const res = await fetchDashboardAnalytics();
+            if (res.data) {
+                setAnalytics(res.data);
+                setIsLive(true);
+                return;
+            }
+        } catch (err) {
+            console.log('API unavailable, using demo data');
+        }
+        // Fallback demo data
         setAnalytics({
             campaigns: { total: 12, active: 5 },
             leads: { total: 1847, connected: 623, replied: 284, converted: 91 },
             rates: { acceptance: 33.7, reply: 15.4, conversion: 4.9 },
             today: { total_actions: 156, successful_actions: 142, failed_actions: 14 }
         });
-    }, []);
+    };
 
-    if (!analytics) return null;
+    if (!analytics) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
 
     const stats = [
         {
-            label: 'Total Campaigns',
-            value: analytics.campaigns.total,
-            sub: `${analytics.campaigns.active} Active`,
-            icon: Target,
-            color: 'from-violet-500 to-purple-600',
-            shadowColor: 'shadow-violet-200',
-            change: '+3',
-            up: true
+            label: 'Total Campaigns', value: analytics.campaigns?.total ?? 0,
+            sub: `${analytics.campaigns?.active ?? 0} Active`, icon: Target,
+            color: 'from-violet-500 to-purple-600', shadowColor: 'shadow-violet-200',
+            change: '+3', up: true
         },
         {
-            label: 'Total Leads',
-            value: analytics.leads.total.toLocaleString(),
-            sub: `${analytics.leads.connected} Connected`,
-            icon: Users,
-            color: 'from-blue-500 to-cyan-500',
-            shadowColor: 'shadow-blue-200',
-            change: '+127',
-            up: true
+            label: 'Total Leads', value: (analytics.leads?.total ?? 0).toLocaleString(),
+            sub: `${analytics.leads?.connected ?? 0} Connected`, icon: Users,
+            color: 'from-blue-500 to-cyan-500', shadowColor: 'shadow-blue-200',
+            change: '+127', up: true
         },
         {
-            label: 'Acceptance Rate',
-            value: `${analytics.rates.acceptance}%`,
-            sub: `Reply: ${analytics.rates.reply}%`,
-            icon: TrendingUp,
-            color: 'from-emerald-500 to-teal-500',
-            shadowColor: 'shadow-emerald-200',
-            change: '+2.1%',
-            up: true
+            label: 'Acceptance Rate', value: `${analytics.rates?.acceptance ?? 0}%`,
+            sub: `Reply: ${analytics.rates?.reply ?? 0}%`, icon: TrendingUp,
+            color: 'from-emerald-500 to-teal-500', shadowColor: 'shadow-emerald-200',
+            change: '+2.1%', up: true
         },
         {
-            label: 'Daily Actions',
-            value: analytics.today.total_actions,
-            sub: `${analytics.today.successful_actions} Success`,
-            icon: Activity,
-            color: 'from-orange-500 to-amber-500',
-            shadowColor: 'shadow-orange-200',
-            change: '-8',
-            up: false
+            label: 'Daily Actions', value: analytics.today?.total_actions ?? 0,
+            sub: `${analytics.today?.successful_actions ?? 0} Success`, icon: Activity,
+            color: 'from-orange-500 to-amber-500', shadowColor: 'shadow-orange-200',
+            change: '-8', up: false
         },
     ];
 
@@ -75,9 +79,16 @@ export default function DashboardPage() {
     return (
         <div className={`max-w-7xl transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Overview</h1>
-                <p className="text-sm text-gray-400 mt-1">Real-time performance across all your automation campaigns</p>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Overview</h1>
+                    <p className="text-sm text-gray-400 mt-1">Real-time performance across all your automation campaigns</p>
+                </div>
+                {!isLive && (
+                    <span className="text-[10px] font-bold px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full">
+                        Demo Data
+                    </span>
+                )}
             </div>
 
             {/* Stats Grid */}
@@ -113,10 +124,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-5">
                         {[
-                            { label: 'Sourced', val: analytics.leads.total, max: analytics.leads.total, color: 'from-gray-300 to-gray-400' },
-                            { label: 'Connected', val: analytics.leads.connected, max: analytics.leads.total, color: 'from-blue-400 to-blue-600' },
-                            { label: 'Replied', val: analytics.leads.replied, max: analytics.leads.total, color: 'from-violet-400 to-purple-600' },
-                            { label: 'Converted', val: analytics.leads.converted, max: analytics.leads.total, color: 'from-emerald-400 to-teal-600' },
+                            { label: 'Sourced', val: analytics.leads?.total ?? 0, max: analytics.leads?.total ?? 1, color: 'from-gray-300 to-gray-400' },
+                            { label: 'Connected', val: analytics.leads?.connected ?? 0, max: analytics.leads?.total ?? 1, color: 'from-blue-400 to-blue-600' },
+                            { label: 'Replied', val: analytics.leads?.replied ?? 0, max: analytics.leads?.total ?? 1, color: 'from-violet-400 to-purple-600' },
+                            { label: 'Converted', val: analytics.leads?.converted ?? 0, max: analytics.leads?.total ?? 1, color: 'from-emerald-400 to-teal-600' },
                         ].map((item, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex justify-between items-center">

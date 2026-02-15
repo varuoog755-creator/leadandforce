@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import {
     MessageSquare, Search, Filter, Star, Archive, Trash2, Reply,
     Linkedin, Instagram, Facebook, ChevronRight, Clock, CheckCheck,
-    Send, Paperclip, MoreVertical, User
+    Send, Paperclip, MoreVertical, User, Loader2
 } from 'lucide-react';
+import { fetchInboxMessages } from '../../lib/api';
 
 interface Message {
     id: string;
@@ -33,6 +34,17 @@ const platformColors: Record<string, string> = {
     facebook: 'bg-blue-600',
 };
 
+const avatarColors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500'];
+
+const DEMO_MESSAGES: Message[] = [
+    { id: '1', platform: 'linkedin', username: 'john.doe@email.com', sender_name: 'Sarah Chen', sender_profile_url: '#', message_text: 'Hi John! Thanks for connecting. I\'d love to learn more about what LeadEnforce offers. Are you available for a quick call this week?', is_outbound: false, is_read: false, thread_id: 'thread-1', created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), avatar_color: avatarColors[0] },
+    { id: '2', platform: 'linkedin', username: 'john.doe@email.com', sender_name: 'James Wilson', sender_profile_url: '#', message_text: 'Great to be connected! I saw your profile and I think we could collaborate on the SaaS space. Let me know your thoughts.', is_outbound: false, is_read: false, thread_id: 'thread-2', created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(), avatar_color: avatarColors[1] },
+    { id: '3', platform: 'linkedin', username: 'john.doe@email.com', sender_name: 'Emily Davis', sender_profile_url: '#', message_text: 'Thanks for the connection request! Your automation tools look interesting. Do you have any case studies you could share?', is_outbound: false, is_read: true, thread_id: 'thread-3', created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(), avatar_color: avatarColors[2] },
+    { id: '4', platform: 'instagram', username: '@leadenforce_official', sender_name: 'techstartup_io', sender_profile_url: '#', message_text: 'Hey! Loved your latest post about lead generation. Would you be interested in a collab?', is_outbound: false, is_read: true, thread_id: 'thread-4', created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), avatar_color: avatarColors[3] },
+    { id: '5', platform: 'linkedin', username: 'john.doe@email.com', sender_name: 'Michael Brown', sender_profile_url: '#', message_text: 'Hi John, I noticed you\'re at LeadEnforce. We\'re looking for automation solutions for our sales team. Can we schedule a demo?', is_outbound: false, is_read: true, thread_id: 'thread-5', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), avatar_color: avatarColors[4] },
+    { id: '6', platform: 'linkedin', username: 'john.doe@email.com', sender_name: 'Alex Turner', sender_profile_url: '#', message_text: 'Thanks for reaching out! I appreciate the personalized message. Let\'s connect further.', is_outbound: false, is_read: true, thread_id: 'thread-6', created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), avatar_color: avatarColors[5] },
+];
+
 export default function InboxPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [selectedThread, setSelectedThread] = useState<string | null>(null);
@@ -40,64 +52,35 @@ export default function InboxPage() {
     const [mounted, setMounted] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [filter, setFilter] = useState<'all' | 'unread' | 'starred'>('all');
-
-    const avatarColors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500'];
+    const [isLive, setIsLive] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
         setMounted(true);
-        // Demo messages
-        const demoMessages: Message[] = [
-            {
-                id: '1', platform: 'linkedin', username: 'john.doe@email.com',
-                sender_name: 'Sarah Chen', sender_profile_url: '#',
-                message_text: 'Hi John! Thanks for connecting. I\'d love to learn more about what LeadEnforce offers. Are you available for a quick call this week?',
-                is_outbound: false, is_read: false, thread_id: 'thread-1',
-                created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[0],
-            },
-            {
-                id: '2', platform: 'linkedin', username: 'john.doe@email.com',
-                sender_name: 'James Wilson', sender_profile_url: '#',
-                message_text: 'Great to be connected! I saw your profile and I think we could collaborate on the SaaS space. Let me know your thoughts.',
-                is_outbound: false, is_read: false, thread_id: 'thread-2',
-                created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[1],
-            },
-            {
-                id: '3', platform: 'linkedin', username: 'john.doe@email.com',
-                sender_name: 'Emily Davis', sender_profile_url: '#',
-                message_text: 'Thanks for the connection request! Your automation tools look interesting. Do you have any case studies you could share?',
-                is_outbound: false, is_read: true, thread_id: 'thread-3',
-                created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[2],
-            },
-            {
-                id: '4', platform: 'instagram', username: '@leadenforce_official',
-                sender_name: 'techstartup_io', sender_profile_url: '#',
-                message_text: 'Hey! Loved your latest post about lead generation. Would you be interested in a collab?',
-                is_outbound: false, is_read: true, thread_id: 'thread-4',
-                created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[3],
-            },
-            {
-                id: '5', platform: 'linkedin', username: 'john.doe@email.com',
-                sender_name: 'Michael Brown', sender_profile_url: '#',
-                message_text: 'Hi John, I noticed you\'re at LeadEnforce. We\'re looking for automation solutions for our sales team. Can we schedule a demo?',
-                is_outbound: false, is_read: true, thread_id: 'thread-5',
-                created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[4],
-            },
-            {
-                id: '6', platform: 'linkedin', username: 'john.doe@email.com',
-                sender_name: 'Alex Turner', sender_profile_url: '#',
-                message_text: 'Thanks for reaching out! I appreciate the personalized message. Let\'s connect further.',
-                is_outbound: false, is_read: true, thread_id: 'thread-6',
-                created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-                avatar_color: avatarColors[5],
-            },
-        ];
-        setMessages(demoMessages);
+        loadMessages();
     }, []);
+
+    const loadMessages = async () => {
+        try {
+            const res = await fetchInboxMessages();
+            if (res.data) {
+                const msgs = Array.isArray(res.data) ? res.data : res.data.messages || [];
+                // Assign avatar colors to messages that don't have them
+                const coloredMsgs = msgs.map((m: any, i: number) => ({
+                    ...m,
+                    avatar_color: m.avatar_color || avatarColors[i % avatarColors.length],
+                }));
+                setMessages(coloredMsgs);
+                setIsLive(true);
+                setPageLoading(false);
+                return;
+            }
+        } catch (err) {
+            console.log('API unavailable, using demo data');
+        }
+        setMessages(DEMO_MESSAGES);
+        setPageLoading(false);
+    };
 
     const filteredMessages = messages.filter(m => {
         if (filter === 'unread') return !m.is_read;

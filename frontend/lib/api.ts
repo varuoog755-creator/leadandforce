@@ -74,5 +74,11 @@ export const fetchLeads = (campaignId: string) => api.get(`/leads/${campaignId}`
 
 // Inbox
 export const fetchInboxMessages = () => api.get('/inbox');
+export const fetchInboxStats = () => api.get('/inbox/stats');
+export const fetchInboxThread = (threadId: string) => api.get(`/inbox/thread/${threadId}`);
+export const replyToMessage = (data: { threadId: string; socialAccountId: string; messageText: string }) =>
+    api.post('/inbox/reply', data);
+export const markMessageRead = (id: string) => api.patch(`/inbox/${id}/read`);
+export const markThreadRead = (threadId: string) => api.patch(`/inbox/thread/${threadId}/read`);
 
 export default api;

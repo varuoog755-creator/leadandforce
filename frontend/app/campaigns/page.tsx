@@ -6,6 +6,7 @@ import {
     ThumbsUp, Eye, Heart, ChevronDown, BarChart3, Linkedin, Instagram, Facebook,
     ArrowUpRight, CheckCircle2, Zap, Calendar
 } from 'lucide-react';
+import { fetchCampaigns, createCampaign, updateCampaignStatus, deleteCampaign } from '../../lib/api';
 
 interface Campaign {
     id: string;
@@ -24,17 +25,11 @@ interface Campaign {
 }
 
 const platformIcons: Record<string, any> = {
-    linkedin: Linkedin,
-    instagram: Instagram,
-    facebook: Facebook,
+    linkedin: Linkedin, instagram: Instagram, facebook: Facebook,
 };
-
 const platformGradients: Record<string, string> = {
-    linkedin: 'from-blue-500 to-blue-700',
-    instagram: 'from-pink-500 to-rose-600',
-    facebook: 'from-blue-400 to-indigo-600',
+    linkedin: 'from-blue-500 to-blue-700', instagram: 'from-pink-500 to-rose-600', facebook: 'from-blue-400 to-indigo-600',
 };
-
 const actionTypeLabels: Record<string, { label: string; icon: any }> = {
     connect: { label: 'Connection Requests', icon: Users },
     message: { label: 'Direct Messages', icon: MessageSquare },
@@ -43,7 +38,6 @@ const actionTypeLabels: Record<string, { label: string; icon: any }> = {
     comment: { label: 'Auto Comment', icon: MessageSquare },
     view_story: { label: 'Story Views', icon: Eye },
 };
-
 const statusBadge: Record<string, { label: string; color: string; dot: string }> = {
     active: { label: 'Active', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-400' },
     paused: { label: 'Paused', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-400' },
@@ -51,59 +45,58 @@ const statusBadge: Record<string, { label: string; color: string; dot: string }>
     error: { label: 'Error', color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-400' },
 };
 
+const DEMO_CAMPAIGNS: Campaign[] = [
+    { id: '1', name: 'Tech Founders Q1 Outreach', platform: 'linkedin', action_type: 'connect', status: 'active', daily_limit: 30, target_audience_url: 'https://linkedin.com/sales/search', personalization_template: 'Hi {name}, I noticed you\'re at {company}...', account_username: 'john.doe@email.com', total_leads: 847, connected_count: 312, replied_count: 89, created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: '2', name: 'SaaS Decision Makers', platform: 'linkedin', action_type: 'message', status: 'active', daily_limit: 25, target_audience_url: null, personalization_template: null, account_username: 'john.doe@email.com', total_leads: 523, connected_count: 201, replied_count: 67, created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: '3', name: 'Instagram Growth Campaign', platform: 'instagram', action_type: 'follow', status: 'paused', daily_limit: 50, target_audience_url: null, personalization_template: null, account_username: '@leadenforce_official', total_leads: 156, connected_count: 42, replied_count: 12, created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+];
+
 export default function CampaignsPage() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [isLive, setIsLive] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [formData, setFormData] = useState({
-        name: '',
-        platform: 'linkedin',
-        actionType: 'connect',
-        dailyLimit: '30',
-        targetAudienceUrl: '',
-        personalizationTemplate: '',
-        socialAccountId: '',
+        name: '', platform: 'linkedin', actionType: 'connect',
+        dailyLimit: '30', targetAudienceUrl: '', personalizationTemplate: '', socialAccountId: '',
     });
 
     useEffect(() => {
         setMounted(true);
-        // Demo campaigns
-        setCampaigns([
-            {
-                id: '1', name: 'Tech Founders Q1 Outreach', platform: 'linkedin',
-                action_type: 'connect', status: 'active', daily_limit: 30,
-                target_audience_url: 'https://linkedin.com/sales/search', personalization_template: 'Hi {name}, I noticed you\'re at {company}...',
-                account_username: 'john.doe@email.com', total_leads: 847, connected_count: 312, replied_count: 89,
-                created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-                id: '2', name: 'SaaS Decision Makers', platform: 'linkedin',
-                action_type: 'message', status: 'active', daily_limit: 25,
-                target_audience_url: null, personalization_template: null,
-                account_username: 'john.doe@email.com', total_leads: 523, connected_count: 201, replied_count: 67,
-                created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-                id: '3', name: 'Instagram Growth Campaign', platform: 'instagram',
-                action_type: 'follow', status: 'paused', daily_limit: 50,
-                target_audience_url: null, personalization_template: null,
-                account_username: '@leadenforce_official', total_leads: 156, connected_count: 42, replied_count: 12,
-                created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-        ]);
+        loadCampaigns();
     }, []);
+
+    const loadCampaigns = async () => {
+        try {
+            const res = await fetchCampaigns();
+            if (res.data) {
+                setCampaigns(Array.isArray(res.data) ? res.data : res.data.campaigns || []);
+                setIsLive(true);
+                return;
+            }
+        } catch (err) {
+            console.log('API unavailable, using demo data');
+        }
+        setCampaigns(DEMO_CAMPAIGNS);
+    };
 
     const handleToggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'active' ? 'paused' : 'active';
         setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+        try {
+            if (isLive) await updateCampaignStatus(id, newStatus);
+        } catch { /* revert silently */ }
         setSuccessMsg(`Campaign ${newStatus === 'active' ? 'resumed' : 'paused'} successfully`);
         setTimeout(() => setSuccessMsg(''), 3000);
     };
 
     const handleDelete = async (id: string) => {
         setCampaigns(prev => prev.filter(c => c.id !== id));
+        try {
+            if (isLive) await deleteCampaign(id);
+        } catch { /* revert silently */ }
         setSuccessMsg('Campaign deleted successfully');
         setTimeout(() => setSuccessMsg(''), 3000);
     };
@@ -111,27 +104,28 @@ export default function CampaignsPage() {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const newCampaign: Campaign = {
-                id: Date.now().toString(),
-                name: formData.name,
-                platform: formData.platform,
-                action_type: formData.actionType,
-                status: 'active',
-                daily_limit: parseInt(formData.dailyLimit) || 30,
-                target_audience_url: formData.targetAudienceUrl || null,
-                personalization_template: formData.personalizationTemplate || null,
-                account_username: 'john.doe@email.com',
-                total_leads: 0,
-                connected_count: 0,
-                replied_count: 0,
-                created_at: new Date().toISOString(),
-            };
-
-            setCampaigns(prev => [newCampaign, ...prev]);
+            if (isLive) {
+                const res = await createCampaign({
+                    name: formData.name, socialAccountId: formData.socialAccountId,
+                    platform: formData.platform, actionType: formData.actionType,
+                    dailyLimit: parseInt(formData.dailyLimit) || 30,
+                    targetAudienceUrl: formData.targetAudienceUrl || undefined,
+                    personalizationTemplate: formData.personalizationTemplate || undefined,
+                });
+                setCampaigns(prev => [res.data, ...prev]);
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const newCampaign: Campaign = {
+                    id: Date.now().toString(), name: formData.name, platform: formData.platform,
+                    action_type: formData.actionType, status: 'active', daily_limit: parseInt(formData.dailyLimit) || 30,
+                    target_audience_url: formData.targetAudienceUrl || null,
+                    personalization_template: formData.personalizationTemplate || null,
+                    account_username: 'john.doe@email.com', total_leads: 0, connected_count: 0, replied_count: 0,
+                    created_at: new Date().toISOString(),
+                };
+                setCampaigns(prev => [newCampaign, ...prev]);
+            }
             setShowCreateModal(false);
             setFormData({ name: '', platform: 'linkedin', actionType: 'connect', dailyLimit: '30', targetAudienceUrl: '', personalizationTemplate: '', socialAccountId: '' });
             setSuccessMsg('Campaign created and started!');

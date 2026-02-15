@@ -5,6 +5,7 @@ import {
     Settings, Plus, Trash2, Shield, Wifi, WifiOff, AlertTriangle,
     Eye, EyeOff, Linkedin, Instagram, Facebook, X, Loader2, CheckCircle2
 } from 'lucide-react';
+import { fetchSocialAccounts, addSocialAccount, deleteSocialAccount } from '../../lib/api';
 
 interface SocialAccount {
     id: string;
@@ -32,13 +33,30 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
     error: { label: 'Error', color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-400' },
 };
 
+const DEMO_ACCOUNTS: SocialAccount[] = [
+    {
+        id: '1', platform: 'linkedin', username: 'john.doe@email.com', status: 'active',
+        proxy_ip: '192.168.1.100', last_action_at: new Date().toISOString(),
+        daily_action_count: 42, warmup_day: 14,
+        created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: '2', platform: 'instagram', username: '@leadenforce_official', status: 'warming_up',
+        proxy_ip: '10.0.0.55', last_action_at: new Date().toISOString(),
+        daily_action_count: 8, warmup_day: 3,
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+];
+
 export default function SettingsPage() {
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [isLive, setIsLive] = useState(false);
     const [formData, setFormData] = useState({
         platform: 'linkedin',
         username: '',
@@ -51,32 +69,24 @@ export default function SettingsPage() {
 
     useEffect(() => {
         setMounted(true);
-        // Demo accounts - will load from API when DB is connected
-        setAccounts([
-            {
-                id: '1',
-                platform: 'linkedin',
-                username: 'john.doe@email.com',
-                status: 'active',
-                proxy_ip: '192.168.1.100',
-                last_action_at: new Date().toISOString(),
-                daily_action_count: 42,
-                warmup_day: 14,
-                created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-                id: '2',
-                platform: 'instagram',
-                username: '@leadenforce_official',
-                status: 'warming_up',
-                proxy_ip: '10.0.0.55',
-                last_action_at: new Date().toISOString(),
-                daily_action_count: 8,
-                warmup_day: 3,
-                created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-        ]);
+        loadAccounts();
     }, []);
+
+    const loadAccounts = async () => {
+        try {
+            const res = await fetchSocialAccounts();
+            if (res.data) {
+                setAccounts(Array.isArray(res.data) ? res.data : res.data.accounts || []);
+                setIsLive(true);
+                setPageLoading(false);
+                return;
+            }
+        } catch (err) {
+            console.log('API unavailable, using demo data');
+        }
+        setAccounts(DEMO_ACCOUNTS);
+        setPageLoading(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,28 +100,31 @@ export default function SettingsPage() {
         }
 
         try {
-            // Simulate API call - will use real API when DB is connected
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const newAccount: SocialAccount = {
-                id: Date.now().toString(),
-                platform: formData.platform,
-                username: formData.username,
-                status: 'warming_up',
-                proxy_ip: formData.proxyIp || null,
-                last_action_at: null,
-                daily_action_count: 0,
-                warmup_day: 1,
-                created_at: new Date().toISOString(),
-            };
-
-            setAccounts(prev => [newAccount, ...prev]);
+            if (isLive) {
+                const res = await addSocialAccount({
+                    platform: formData.platform,
+                    username: formData.username,
+                    password: formData.password,
+                    proxyIp: formData.proxyIp || undefined,
+                    proxyPort: formData.proxyPort ? parseInt(formData.proxyPort) : undefined,
+                });
+                setAccounts(prev => [res.data, ...prev]);
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const newAccount: SocialAccount = {
+                    id: Date.now().toString(), platform: formData.platform,
+                    username: formData.username, status: 'warming_up',
+                    proxy_ip: formData.proxyIp || null, last_action_at: null,
+                    daily_action_count: 0, warmup_day: 1, created_at: new Date().toISOString(),
+                };
+                setAccounts(prev => [newAccount, ...prev]);
+            }
             setShowAddModal(false);
             setFormData({ platform: 'linkedin', username: '', password: '', proxyIp: '', proxyPort: '' });
             setSuccessMsg('Account added successfully! Warmup process has started.');
             setTimeout(() => setSuccessMsg(''), 4000);
-        } catch (err) {
-            setFormError('Failed to add account. Please try again.');
+        } catch (err: any) {
+            setFormError(err.response?.data?.error || 'Failed to add account. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -120,12 +133,16 @@ export default function SettingsPage() {
     const handleDelete = async (id: string) => {
         setDeleteLoading(id);
         try {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            if (isLive) {
+                await deleteSocialAccount(id);
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
             setAccounts(prev => prev.filter(a => a.id !== id));
             setSuccessMsg('Account removed successfully.');
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch {
-            // handle error
+            setFormError('Failed to delete account.');
         } finally {
             setDeleteLoading(null);
         }

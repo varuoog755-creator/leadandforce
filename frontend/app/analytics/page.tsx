@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import {
     TrendingUp, TrendingDown, Users, Target, BarChart3, ArrowUpRight,
     ArrowDownRight, Activity, Calendar, Download, Linkedin, Instagram,
-    Facebook, MessageSquare, ThumbsUp, Eye, UserPlus, Zap
+    Facebook, MessageSquare, ThumbsUp, Eye, UserPlus, Zap, Loader2
 } from 'lucide-react';
+import { fetchDashboardAnalytics } from '../../lib/api';
 
 interface MetricCard {
     label: string;
@@ -35,17 +36,20 @@ interface PlatformStat {
 export default function AnalyticsPage() {
     const [mounted, setMounted] = useState(false);
     const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+    const [isLive, setIsLive] = useState(false);
+    const [metrics, setMetrics] = useState<MetricCard[]>([]);
+    const [weeklyData, setWeeklyData] = useState<ChartDataPoint[]>([]);
+    const [platformStats, setPlatformStats] = useState<PlatformStat[]>([]);
+    const [funnelData, setFunnelData] = useState<{ label: string; value: number; pct: number; color: string }[]>([]);
+    const [topCampaigns, setTopCampaigns] = useState<{ name: string; leads: number; rate: number; status: string }[]>([]);
 
-    useEffect(() => { setMounted(true); }, []);
-
-    const metrics: MetricCard[] = [
+    const DEMO_METRICS: MetricCard[] = [
         { label: 'Total Leads', value: '2,847', change: 12.5, icon: Users, color: 'text-blue-500', gradient: 'from-blue-500 to-cyan-500' },
         { label: 'Acceptance Rate', value: '38.2%', change: 5.3, icon: ThumbsUp, color: 'text-emerald-500', gradient: 'from-emerald-500 to-teal-500' },
         { label: 'Reply Rate', value: '24.7%', change: -2.1, icon: MessageSquare, color: 'text-violet-500', gradient: 'from-violet-500 to-purple-500' },
         { label: 'Daily Actions', value: '142', change: 8.9, icon: Zap, color: 'text-amber-500', gradient: 'from-amber-500 to-orange-500' },
     ];
-
-    const weeklyData: ChartDataPoint[] = [
+    const DEMO_WEEKLY: ChartDataPoint[] = [
         { label: 'Mon', connections: 45, messages: 32, replies: 12 },
         { label: 'Tue', connections: 52, messages: 38, replies: 18 },
         { label: 'Wed', connections: 48, messages: 42, replies: 15 },
@@ -54,36 +58,78 @@ export default function AnalyticsPage() {
         { label: 'Sat', connections: 28, messages: 18, replies: 8 },
         { label: 'Sun', connections: 22, messages: 14, replies: 6 },
     ];
-
-    const platformStats: PlatformStat[] = [
+    const DEMO_PLATFORMS: PlatformStat[] = [
         { platform: 'LinkedIn', icon: Linkedin, color: 'bg-blue-500', leads: 2124, rate: 42.1, actions: 98 },
         { platform: 'Instagram', icon: Instagram, color: 'bg-gradient-to-br from-pink-500 to-purple-600', leads: 512, rate: 31.8, actions: 32 },
         { platform: 'Facebook', icon: Facebook, color: 'bg-blue-600', leads: 211, rate: 28.5, actions: 12 },
     ];
-
-    const maxConnections = Math.max(...weeklyData.map(d => d.connections));
-
-    const funnelData = [
+    const DEMO_FUNNEL = [
         { label: 'Sent', value: 2847, pct: 100, color: 'bg-violet-500' },
         { label: 'Accepted', value: 1088, pct: 38.2, color: 'bg-blue-500' },
         { label: 'Replied', value: 703, pct: 24.7, color: 'bg-emerald-500' },
         { label: 'Converted', value: 156, pct: 5.5, color: 'bg-amber-500' },
     ];
-
-    const topCampaigns = [
+    const DEMO_TOP_CAMPAIGNS = [
         { name: 'Tech Founders Q1', leads: 847, rate: 36.8, status: 'active' },
         { name: 'SaaS Decision Makers', leads: 523, rate: 38.4, status: 'active' },
         { name: 'IG Growth Campaign', leads: 156, rate: 26.9, status: 'paused' },
         { name: 'FB Retargeting', leads: 89, rate: 22.1, status: 'completed' },
     ];
 
+    useEffect(() => {
+        setMounted(true);
+        loadAnalytics();
+    }, []);
+
+    const loadAnalytics = async () => {
+        try {
+            const res = await fetchDashboardAnalytics();
+            if (res.data) {
+                const d = res.data;
+                // Map API data to card metrics if available
+                setMetrics([
+                    { label: 'Total Leads', value: (d.leads?.total || 0).toLocaleString(), change: 12.5, icon: Users, color: 'text-blue-500', gradient: 'from-blue-500 to-cyan-500' },
+                    { label: 'Acceptance Rate', value: `${d.rates?.acceptance || 0}%`, change: 5.3, icon: ThumbsUp, color: 'text-emerald-500', gradient: 'from-emerald-500 to-teal-500' },
+                    { label: 'Reply Rate', value: `${d.rates?.reply || 0}%`, change: -2.1, icon: MessageSquare, color: 'text-violet-500', gradient: 'from-violet-500 to-purple-500' },
+                    { label: 'Daily Actions', value: (d.today?.total_actions || 0).toString(), change: 8.9, icon: Zap, color: 'text-amber-500', gradient: 'from-amber-500 to-orange-500' },
+                ]);
+                if (d.weekly) setWeeklyData(d.weekly);
+                else setWeeklyData(DEMO_WEEKLY);
+                if (d.platforms) setPlatformStats(d.platforms);
+                else setPlatformStats(DEMO_PLATFORMS);
+                if (d.funnel) setFunnelData(d.funnel);
+                else setFunnelData(DEMO_FUNNEL);
+                if (d.topCampaigns) setTopCampaigns(d.topCampaigns);
+                else setTopCampaigns(DEMO_TOP_CAMPAIGNS);
+                setIsLive(true);
+                return;
+            }
+        } catch (err) {
+            console.log('API unavailable, using demo data');
+        }
+        setMetrics(DEMO_METRICS);
+        setWeeklyData(DEMO_WEEKLY);
+        setPlatformStats(DEMO_PLATFORMS);
+        setFunnelData(DEMO_FUNNEL);
+        setTopCampaigns(DEMO_TOP_CAMPAIGNS);
+    };
+
+    const maxConnections = Math.max(...(weeklyData.length ? weeklyData.map(d => d.connections) : [1]));
+
     return (
         <div className={`max-w-7xl transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
-                    <p className="text-sm text-gray-400 mt-1">Performance insights across all campaigns</p>
+                <div className="flex items-center gap-3">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+                        <p className="text-sm text-gray-400 mt-1">Performance insights across all campaigns</p>
+                    </div>
+                    {!isLive && mounted && (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+                            Demo Data
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-gray-100 rounded-xl p-0.5">
