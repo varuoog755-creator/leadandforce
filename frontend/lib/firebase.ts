@@ -13,6 +13,3 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-    client_id: '958774538879-qs8703ovjo2m4i8n0gjovlngn2hfdt6q.apps.googleusercontent.com'
-});
