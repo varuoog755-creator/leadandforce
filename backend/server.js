@@ -10,6 +10,7 @@ const socialAccountRoutes = require('./routes/socialAccounts');
 const leadRoutes = require('./routes/leads');
 const analyticsRoutes = require('./routes/analytics');
 const inboxRoutes = require('./routes/inbox');
+const actionLogRoutes = require('./routes/actionLogs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +57,7 @@ apiRoutes.use('/social-accounts', socialAccountRoutes);
 apiRoutes.use('/leads', leadRoutes);
 apiRoutes.use('/analytics', analyticsRoutes);
 apiRoutes.use('/inbox', inboxRoutes);
+apiRoutes.use('/action-logs', actionLogRoutes);
 
 // Register routes both with and without /api prefix to be safe
 app.use('/api', apiRoutes);

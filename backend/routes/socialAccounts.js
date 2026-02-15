@@ -7,7 +7,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 router.use(authenticateToken);
 
-const ENCRYPTION_KEY = process.env.JWT_SECRET; // Use JWT secret for encryption
+const ENCRYPTION_KEY = process.env.JWT_SECRET;
 
 /**
  * GET /api/social-accounts
@@ -25,6 +25,55 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Get social accounts error:', error);
         res.status(500).json({ error: { message: 'Failed to fetch accounts', status: 500 } });
+    }
+});
+
+/**
+ * GET /api/social-accounts/:id/stats
+ * Get detailed stats for a specific social account
+ */
+router.get('/:id/stats', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Verify account belongs to user
+        const accountCheck = await db.query(
+            'SELECT id, platform, username, status, daily_action_count, warmup_day, last_action_at, created_at FROM social_accounts WHERE id = $1 AND user_id = $2',
+            [id, req.user.userId]
+        );
+
+        if (accountCheck.rows.length === 0) {
+            return res.status(404).json({ error: { message: 'Account not found', status: 404 } });
+        }
+
+        // Get action stats
+        const actionStats = await db.query(
+            `SELECT 
+         COUNT(*) as total_actions,
+         COUNT(CASE WHEN status = 'success' THEN 1 END) as successful,
+         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
+         COUNT(CASE WHEN executed_at > NOW() - INTERVAL '24 hours' THEN 1 END) as last_24h,
+         AVG(execution_time_ms) as avg_execution_time
+       FROM action_logs WHERE social_account_id = $1`,
+            [id]
+        );
+
+        // Get campaign count
+        const campaignCount = await db.query(
+            'SELECT COUNT(*) as count FROM campaigns WHERE social_account_id = $1',
+            [id]
+        );
+
+        res.json({
+            account: accountCheck.rows[0],
+            stats: {
+                ...actionStats.rows[0],
+                campaign_count: parseInt(campaignCount.rows[0].count)
+            }
+        });
+    } catch (error) {
+        console.error('Get account stats error:', error);
+        res.status(500).json({ error: { message: 'Failed to fetch account stats', status: 500 } });
     }
 });
 
@@ -49,10 +98,8 @@ router.post('/',
         const { platform, username, password, proxyIp, proxyPort } = req.body;
 
         try {
-            // Encrypt password
             const encryptedCredentials = CryptoJS.AES.encrypt(password, ENCRYPTION_KEY).toString();
 
-            // Insert account with warming_up status
             const result = await db.query(
                 `INSERT INTO social_accounts (user_id, platform, username, encrypted_credentials, status, proxy_ip, proxy_port)
          VALUES ($1, $2, $3, $4, 'warming_up', $5, $6)
@@ -62,7 +109,7 @@ router.post('/',
 
             res.status(201).json({ account: result.rows[0] });
         } catch (error) {
-            if (error.code === '23505') { // Unique constraint violation
+            if (error.code === '23505') {
                 return res.status(409).json({ error: { message: 'Account already exists', status: 409 } });
             }
             console.error('Add social account error:', error);
@@ -70,6 +117,60 @@ router.post('/',
         }
     }
 );
+
+/**
+ * PATCH /api/social-accounts/:id
+ * Update a social account (status, proxy)
+ */
+router.patch('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status, proxyIp, proxyPort } = req.body;
+
+    try {
+        // Build dynamic update
+        const updates = [];
+        const params = [];
+        let paramIndex = 1;
+
+        if (status) {
+            const validStatuses = ['active', 'paused', 'warming_up', 'error'];
+            if (!validStatuses.includes(status)) {
+                return res.status(400).json({ error: { message: `Status must be one of: ${validStatuses.join(', ')}`, status: 400 } });
+            }
+            updates.push(`status = $${paramIndex++}`);
+            params.push(status);
+        }
+        if (proxyIp !== undefined) {
+            updates.push(`proxy_ip = $${paramIndex++}`);
+            params.push(proxyIp);
+        }
+        if (proxyPort !== undefined) {
+            updates.push(`proxy_port = $${paramIndex++}`);
+            params.push(proxyPort);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: { message: 'No valid fields to update', status: 400 } });
+        }
+
+        params.push(id, req.user.userId);
+        const result = await db.query(
+            `UPDATE social_accounts SET ${updates.join(', ')}
+       WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+       RETURNING id, platform, username, status, proxy_ip, proxy_port, warmup_day, daily_action_count, last_action_at`,
+            params
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: { message: 'Account not found', status: 404 } });
+        }
+
+        res.json({ account: result.rows[0] });
+    } catch (error) {
+        console.error('Update social account error:', error);
+        res.status(500).json({ error: { message: 'Failed to update account', status: 500 } });
+    }
+});
 
 /**
  * DELETE /api/social-accounts/:id

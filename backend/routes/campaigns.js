@@ -2,7 +2,6 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const { addAutomationJob } = require('../services/queue-manager');
 
 const router = express.Router();
 

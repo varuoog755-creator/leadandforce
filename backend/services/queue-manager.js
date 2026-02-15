@@ -1,48 +1,56 @@
-const { Queue, Worker } = require('bullmq');
-const Redis = require('redis');
+/**
+ * Queue Manager - Graceful Redis/BullMQ wrapper
+ * Falls back to no-op if Redis is unavailable
+ */
 
-// Redis connection
-const redisClient = Redis.createClient({
-    url: process.env.REDIS_URL
-});
+let redisClient = null;
+let linkedinQueue = null;
+let instagramQueue = null;
+let facebookQueue = null;
+let isConnected = false;
 
-redisClient.on('connect', () => {
-    console.log('✅ Connected to Redis');
-});
-
-redisClient.on('error', (err) => {
-    console.error('❌ Redis connection error:', err);
-});
-
-redisClient.connect();
-
-// Job queues for different platforms
-const linkedinQueue = new Queue('linkedin-automation', {
-    connection: {
-        host: process.env.REDIS_URL?.split('://')[1]?.split(':')[0] || 'localhost',
-        port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379')
+async function initializeQueues() {
+    if (!process.env.REDIS_URL) {
+        console.warn('⚠️  REDIS_URL not configured — queue manager disabled (jobs will not be processed)');
+        return;
     }
-});
 
-const instagramQueue = new Queue('instagram-automation', {
-    connection: {
-        host: process.env.REDIS_URL?.split('://')[1]?.split(':')[0] || 'localhost',
-        port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379')
-    }
-});
+    try {
+        const Redis = require('redis');
+        const { Queue } = require('bullmq');
 
-const facebookQueue = new Queue('facebook-automation', {
-    connection: {
-        host: process.env.REDIS_URL?.split('://')[1]?.split(':')[0] || 'localhost',
-        port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379')
+        redisClient = Redis.createClient({ url: process.env.REDIS_URL });
+
+        redisClient.on('connect', () => {
+            console.log('✅ Connected to Redis');
+            isConnected = true;
+        });
+
+        redisClient.on('error', (err) => {
+            console.error('❌ Redis connection error:', err.message);
+            isConnected = false;
+        });
+
+        await redisClient.connect();
+
+        const connectionConfig = {
+            host: process.env.REDIS_URL?.split('://')[1]?.split(':')[0] || 'localhost',
+            port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379')
+        };
+
+        linkedinQueue = new Queue('linkedin-automation', { connection: connectionConfig });
+        instagramQueue = new Queue('instagram-automation', { connection: connectionConfig });
+        facebookQueue = new Queue('facebook-automation', { connection: connectionConfig });
+
+        console.log('✅ Job queues initialized (linkedin, instagram, facebook)');
+    } catch (err) {
+        console.warn('⚠️  Failed to initialize Redis/BullMQ:', err.message);
+        console.warn('⚠️  Queue manager running in no-op mode');
     }
-});
+}
 
 /**
  * Add a job to the appropriate queue with delay and retry logic
- * @param {string} platform - linkedin, instagram, or facebook
- * @param {object} jobData - Job payload
- * @param {number} delay - Delay in milliseconds before executing
  */
 async function addAutomationJob(platform, jobData, delay = 0) {
     const queueMap = {
@@ -53,7 +61,8 @@ async function addAutomationJob(platform, jobData, delay = 0) {
 
     const queue = queueMap[platform];
     if (!queue) {
-        throw new Error(`Invalid platform: ${platform}`);
+        console.warn(`⚠️  Queue not available for platform: ${platform} (Redis not connected)`);
+        return null;
     }
 
     return await queue.add(`${platform}-action`, jobData, {
@@ -80,7 +89,7 @@ async function getQueueStats(platform) {
 
     const queue = queueMap[platform];
     if (!queue) {
-        throw new Error(`Invalid platform: ${platform}`);
+        return { waiting: 0, active: 0, completed: 0, failed: 0 };
     }
 
     const [waiting, active, completed, failed] = await Promise.all([
@@ -93,11 +102,17 @@ async function getQueueStats(platform) {
     return { waiting, active, completed, failed };
 }
 
+// Initialize on first import (non-blocking)
+initializeQueues().catch(err => {
+    console.warn('⚠️  Queue initialization failed:', err.message);
+});
+
 module.exports = {
     redisClient,
     linkedinQueue,
     instagramQueue,
     facebookQueue,
     addAutomationJob,
-    getQueueStats
+    getQueueStats,
+    isConnected: () => isConnected
 };
