@@ -11,6 +11,7 @@ const leadRoutes = require('./routes/leads');
 const analyticsRoutes = require('./routes/analytics');
 const inboxRoutes = require('./routes/inbox');
 const actionLogRoutes = require('./routes/actionLogs');
+const oauthRoutes = require('./routes/oauth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,7 +46,7 @@ app.use((req, res, next) => {
 
 // Health check and Test endpoints
 const healthCheck = (req, res) => {
-    res.json({ status: 'ok', serverTime: new Date().toISOString(), path: req.url });
+    res.json({ status: 'ok', version: '1.0.1', serverTime: new Date().toISOString(), path: req.url });
 };
 app.get(['/health', '/api/health', '/api/test'], healthCheck);
 
@@ -58,6 +59,7 @@ apiRoutes.use('/leads', leadRoutes);
 apiRoutes.use('/analytics', analyticsRoutes);
 apiRoutes.use('/inbox', inboxRoutes);
 apiRoutes.use('/action-logs', actionLogRoutes);
+apiRoutes.use('/oauth', oauthRoutes);
 
 // Register routes both with and without /api prefix to be safe
 app.use('/api', apiRoutes);
@@ -84,9 +86,12 @@ app.use((req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 LeadEnforce API running on port ${PORT}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-});
+// Only listen if run directly, not when imported as a module (e.g., by Vercel)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 LeadEnforce API running on port ${PORT}`);
+        console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+    });
+}
 
 module.exports = app;

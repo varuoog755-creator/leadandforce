@@ -6,7 +6,7 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import {
     LayoutDashboard, Users, MessageSquare, BarChart3, Settings,
-    LogOut, Zap, ChevronRight, Bell, UserCheck
+    LogOut, Zap, ChevronRight, Bell, UserCheck, Activity
 } from 'lucide-react';
 
 const menuItems = [
@@ -14,6 +14,7 @@ const menuItems = [
     { icon: Users, label: 'Campaigns', href: '/campaigns' },
     { icon: UserCheck, label: 'Leads', href: '/leads' },
     { icon: MessageSquare, label: 'Inbox', href: '/inbox' },
+    { icon: Activity, label: 'Logs', href: '/logs' },
     { icon: BarChart3, label: 'Analytics', href: '/analytics' },
     { icon: Settings, label: 'Settings', href: '/settings' },
 ];

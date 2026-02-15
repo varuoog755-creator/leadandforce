@@ -54,6 +54,8 @@ export const addSocialAccount = (data: {
     proxyPort?: number;
 }) => api.post('/social-accounts', data);
 export const deleteSocialAccount = (id: string) => api.delete(`/social-accounts/${id}`);
+export const fetchAccountStats = (id: string) => api.get(`/social-accounts/${id}/stats`);
+export const initLinkedInOAuth = () => api.get('/oauth/linkedin/init');
 
 // Campaigns
 export const fetchCampaigns = () => api.get('/campaigns');
@@ -71,6 +73,9 @@ export const deleteCampaign = (id: string) => api.delete(`/campaigns/${id}`);
 
 // Leads
 export const fetchLeads = (campaignId: string) => api.get(`/leads/${campaignId}`);
+export const fetchAllLeads = (params?: any) => api.get('/leads', { params });
+export const updateLeadStatus = (id: string, status: string) => api.patch(`/leads/${id}`, { status });
+export const exportLeads = (params?: any) => api.get('/leads/export', { params, responseType: 'blob' });
 
 // Inbox
 export const fetchInboxMessages = () => api.get('/inbox');
@@ -80,5 +85,9 @@ export const replyToMessage = (data: { threadId: string; socialAccountId: string
     api.post('/inbox/reply', data);
 export const markMessageRead = (id: string) => api.patch(`/inbox/${id}/read`);
 export const markThreadRead = (threadId: string) => api.patch(`/inbox/thread/${threadId}/read`);
+
+// Action Logs
+export const fetchActionLogs = (params?: any) => api.get('/action-logs', { params });
+export const fetchCampaignLogs = (campaignId: string, params?: any) => api.get(`/action-logs/campaign/${campaignId}`, { params });
 
 export default api;

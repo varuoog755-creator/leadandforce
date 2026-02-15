@@ -12,7 +12,7 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ error: { message: 'Access token required', status: 401 } });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
             return res.status(403).json({ error: { message: 'Invalid or expired token', status: 403 } });
         }
@@ -27,7 +27,7 @@ function authenticateToken(req, res, next) {
 function generateToken(userId, email) {
     return jwt.sign(
         { userId, email },
-        process.env.JWT_SECRET,
+        JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRY || '7d' }
     );
 }

@@ -1,17 +1,23 @@
 {
     "version": 2,
-    "rewrites": [
+    "builds": [
         {
-            "source": "/api/auth/:path*",
-            "destination": "/frontend/api/auth/:path*"
+            "src": "backend/server.js",
+            "use": "@vercel/node"
         },
         {
-            "source": "/api/:path*",
-            "destination": "http://72.61.235.182:3001/api/:path*"
+            "src": "frontend/package.json",
+            "use": "@vercel/next"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "/backend/server.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/frontend/$1"
+            "src": "/(.*)",
+            "dest": "/frontend/$1"
         }
     ]
 }
